@@ -36,7 +36,8 @@ mongoose.connection.on('connected', () => console.log('数据库连接成功'))
 const userSchema =  mongoose.Schema({
   username: {type: String,required: true},
   password: {type: String,required: true},
-  type: {type: String,required: true}
+  type: {type: String,required: true},
+
 })
 
 //users 集合名称

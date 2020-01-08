@@ -3,6 +3,7 @@ var router = express.Router();
 require('../db')
 const User = require('../model/users')
 const md5 = require('blueimp-md5')
+const filter = {password: 0, __v: 0} // 指定过滤的属性
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -65,6 +66,52 @@ router.post('/login', async (req, res) => {
   //注册cookie
   res.cookie('userid', result._id, {maxAge: 1000 * 60 * 60 * 7})
   res.send({code: 0, data: result})
+})
+
+//更新用户信息
+router.post('/update', async (req, res) => {
+  //从cookie中获取用户id
+  const userId = req.cookies.userid
+  console.log(userId)
+  //cookie过期或者没有
+  if(!userId){
+    res.send({code: 1,msg: '您还没有登录，请先登录'})
+    return
+  }
+  //获取用户其他数据
+  const user = req.body 
+  //根据id查询 并修改
+    User.findByIdAndUpdate({_id: userId}, user, (err, oldUser) => {
+    if( !oldUser ) {
+      //数据库没找到
+      res.clearCookie('userid')
+      res.send({code: 1,msg: '您还没有登录，请先登录'})
+    }else {
+      //合并两个对象
+      const {_id, username, type} = oldUser
+      res.send({code: 0,data: Object.assign({_id, username, type}, user)})
+    }
+  })
+})
+
+//获取用户信息
+router.get('/user', async (req, res) => {
+  //获取cookie 中的 userid
+  const userId = req.cookies.userid
+  //验证
+  if(!userId) {
+    res.send({code: 1,msg: '您没有登录, 请先登录'})
+    return
+  }
+  //发送请求
+  const user = await User.findOne({_id: userId}, filter)
+  if(!user) {
+    //cookie中的id不正确  删除掉
+    res.clearCookie('userid')
+    res.send({code: 1,msg: '您没有登录, 请先登录'})
+    return
+  }
+  res.send({code: 0, data: user})
 })
 
 module.exports = router;
